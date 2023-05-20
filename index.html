@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Timezone Finder</title>
+  <style>
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Timezone API</h1>
+    <h1>Your Current Timezone</h1><br>
+    
+    <p><b>Your current timezone: </b> <span id="current-timezone"></span></p>
+    <p><b>Lat: </b> <span id="lat"></span></p>
+    <p><b>Long: </b> <span id="long"></span></p>
+    <p><b>Offset STD: </b> <span id="OfSTD"></span></p>
+    <p><b>Offset STD Secounds: </b> <span id="OfSTDS"></span></p>
+    <p><b>Offset DST: </b> <span id="OfDST"></span></p>
+    <p><b>Offset DST Secounds: </b> <span id="OfDSTS"></span></p>
+    <p><b>Country: </b> <span id="country"></span></p>
+    <p><b>PostCode: </b> <span id="post"></span></p>
+    <p><b>City: </b> <span id="city"></span></p><br>
+
+    <h2>Enter Address:</h2>
+    <input type="text" id="address-input">
+    <button onclick="getTimezone()">Find Timezone</button>
+    
+    <div id="result"></div>
+  </div>
+  
+  <script>
+    function getCurrentTimezone() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showCurrentTimezone);
+      } else {
+        console.log("Geolocation is not supported by this browser.");
+      }
+    }
+
+    function showCurrentTimezone(position) {
+      var latitude = position.coords.latitude;
+      var longitude = position.coords.longitude;
+      console.log(position);
+      
+      fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&format=json&apiKey=ec4f02bce87141c6ad46733a9a2359a0`)
+        .then(response => response.json())
+        .then(data => {
+          var name = document.getElementById("current-timezone").textContent = data.results[0].timezone.name;
+          document.getElementById("lat").textContent = data.results[0].lat;
+          document.getElementById("long").textContent = data.results[0].lon;
+          document.getElementById("OfSTD").textContent = data.results[0].timezone.offset_STD;
+          document.getElementById("OfSTDS").textContent = data.results[0].timezone.offset_STD_seconds;
+          document.getElementById("OfDST").textContent = data.results[0].timezone.offset_DST;
+          document.getElementById("OfDSTS").textContent = data.results[0].timezone.offset_DST_seconds;
+          document.getElementById("country").textContent = data.results[0].country;
+          document.getElementById("post").textContent = data.results[0].road;
+          document.getElementById("city").textContent = data.results[0].city;
+          
+        })
+        .catch(error => console.log(error));
+    }
+    
+    function getTimezone() {
+      var address = document.getElementById("address-input").value;
+      
+      fetch(`https://api.geoapify.com/v1/geocode/autocomplete?text=${address}&apiKey=ec4f02bce87141c6ad46733a9a2359a0`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.features.length > 0) {
+            var latitude = data.features[0].properties.lat;
+            var longitude = data.features[0].properties.lon;
+            
+            fetch(`https://api.geoapify.com/v1/timezone/by-location?lat=${latitude}&lon=${longitude}&apiKey=ec4f02bce87141c6ad46733a9a2359a0`)
+              .then(response => response.json())
+              .then(data => {
+                document.getElementById("result").textContent = `Timezone: ${data.timezone}`;
+              })
+              .catch(error => console.log(error));
+          } else {
+            document.getElementById("result").textContent = "Invalid address.";
+          }
+        })
+        .catch(error => console.log(error));
+    }
+
+    getCurrentTimezone();
+  </script>
+</body>
+</html>
